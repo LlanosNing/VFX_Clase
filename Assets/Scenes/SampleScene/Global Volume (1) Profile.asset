@@ -50,6 +50,31 @@ MonoBehaviour:
   dirtIntensity:
     m_OverrideState: 1
     m_Value: 0
+--- !u!114 &-6908574729221769433
+MonoBehaviour:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ccf1aba9553839d41ae37dd52e9ebcce, type: 3}
+  m_Name: MotionBlur
+  m_EditorClassIdentifier: Unity.RenderPipelines.Universal.Runtime::UnityEngine.Rendering.Universal.MotionBlur
+  active: 1
+  mode:
+    m_OverrideState: 1
+    m_Value: 1
+  quality:
+    m_OverrideState: 1
+    m_Value: 1
+  intensity:
+    m_OverrideState: 1
+    m_Value: 0
+  clamp:
+    m_OverrideState: 1
+    m_Value: 0.05
 --- !u!114 &-2436286608431770802
 MonoBehaviour:
   m_ObjectHideFlags: 3
@@ -111,17 +136,8 @@ MonoBehaviour:
           inWeight: 0
           outWeight: 0
         - serializedVersion: 3
-          time: 0.192607
-          value: 0.27530366
-          inSlope: 1.9378474
-          outSlope: 1.9378474
-          tangentMode: 0
-          weightedMode: 0
-          inWeight: 0
-          outWeight: 0
-        - serializedVersion: 3
-          time: 0.39139345
-          value: 0.90128756
+          time: 0.39347827
+          value: 0.7762557
           inSlope: 1
           outSlope: 1
           tangentMode: 0
@@ -129,10 +145,19 @@ MonoBehaviour:
           inWeight: 0
           outWeight: 0
         - serializedVersion: 3
-          time: 0.5635246
-          value: 0.7982833
-          inSlope: 0.2962091
-          outSlope: 0.2962091
+          time: 0.5630435
+          value: 0.84931505
+          inSlope: -0.3675797
+          outSlope: -0.3675797
+          tangentMode: 0
+          weightedMode: 0
+          inWeight: 0
+          outWeight: 0
+        - serializedVersion: 3
+          time: 0.7152174
+          value: 0.7214612
+          inSlope: 0.323866
+          outSlope: 0.323866
           tangentMode: 0
           weightedMode: 0
           inWeight: 0
@@ -311,6 +336,7 @@ MonoBehaviour:
   - {fileID: 8196382975961598670}
   - {fileID: -2436286608431770802}
   - {fileID: -447471313714152457}
+  - {fileID: -6908574729221769433}
 --- !u!114 &8196382975961598670
 MonoBehaviour:
   m_ObjectHideFlags: 3

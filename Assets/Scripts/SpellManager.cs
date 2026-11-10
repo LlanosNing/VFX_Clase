@@ -37,27 +37,39 @@ public class SpellConfig
     public Animator targetAnimator;
 
     [Header("Preparation")]
-    public GameObject prepVfxPrefab;
-    public Transform prepLocation;
+    public List<GameObject> prepVfxPrefabs = new List<GameObject>();
     public float prepVfxDelay = 0.0f;
     public CameraShakeConfig prepCameraShake = new CameraShakeConfig();
 
     [Header("Projectile Cast")]
-    public GameObject projectilePrefab;
+    public List<GameObject> projectilePrefabs = new List<GameObject>();
     public Transform castLocation;
     public float projectileCastDelay = 0.8f;
-    public float pathSpeed = 10f;
-    public float projectileSpeed = 15f;
     public CameraShakeConfig castCameraShake = new CameraShakeConfig();
 
     [Header("Projectile Movement")]
+    [Tooltip("Si se desactiva, el hechizo es una invocación (sin proyectil) y el impacto ocurre directamente sobre el objetivo.")]
+    public bool useProjectile = true;
     public ProjectileMovementType movementType = ProjectileMovementType.PathThenTarget;
-    [Tooltip("Prefab del PathCreator que define la ruta inicial (ej. la órbita)")]
     public PathCreator pathPrefab;
+    public bool reversePath = false;
+    public float pathSpeed = 10f;
+    public float projectileSpeed = 15f;
+
+    [Header("Trajectory Noise")]
+    public bool useNoise = false;
+    public float noiseFrequency = 5.0f;
+    public float noiseMagnitude = 0.5f;
+
+    [Header("Floor Restriction")]
+    [Tooltip("Evita que el proyectil baje de un valor Y específico en el transform (ej: 0 para que no atraviese el suelo con el ruido).")]
+    public bool clampMinimumY = true;
+    public float minimumYValue = 0f;
 
     [Header("Impact and Death")]
-    public GameObject impactExplosionPrefab;
+    public List<GameObject> impactExplosionPrefabs = new List<GameObject>();
     public Transform impactLocation;
+    [Tooltip("Tiempo en segundos tras el cual se borrarán los clones de las explosiones para no dejar basura en la escena.")]
     public float destroyImpactVfxAfter = 4f;
     public CameraShakeConfig impactCameraShake = new CameraShakeConfig() { useCameraShake = true };
 
@@ -113,14 +125,14 @@ public class SpellManager : MonoBehaviour
 
         TriggerCameraShake(spell.prepCameraShake);
 
-        if (spell.prepVfxPrefab != null)
+        // FASE 1: PREPARACIÓN
+        if (spell.prepVfxPrefabs != null && spell.prepVfxPrefabs.Count > 0)
         {
-            Vector3 prepPos = spell.prepLocation != null ? spell.prepLocation.position : spell.caster.position;
-            Quaternion prepRot = spell.prepLocation != null ? spell.prepLocation.rotation : spell.caster.rotation;
-
-            GameObject prepVfx = Instantiate(spell.prepVfxPrefab, prepPos, prepRot);
-            PlayParticles(prepVfx);
-            Destroy(prepVfx, 5f);
+            foreach (GameObject prepObj in spell.prepVfxPrefabs)
+            {
+                if (prepObj == null) continue;
+                PlayParticles(prepObj);
+            }
         }
 
         float remainingWait = spell.projectileCastDelay - spell.prepVfxDelay;
@@ -128,50 +140,116 @@ public class SpellManager : MonoBehaviour
 
         TriggerCameraShake(spell.castCameraShake);
 
+        // Obtenemos la posición del objetivo actualizada en el momento del cast
         Vector3 targetImpactPos = spell.impactLocation != null ? spell.impactLocation.position : (spell.target != null ? spell.target.position : Vector3.zero);
 
-        if (spell.projectilePrefab != null && spell.castLocation != null)
+        // FASE 2: PROYECTILES (Se omite si es un hechizo de invocación)
+        if (spell.useProjectile && spell.projectilePrefabs != null && spell.projectilePrefabs.Count > 0 && spell.castLocation != null)
         {
-            GameObject projectile = Instantiate(spell.projectilePrefab, spell.castLocation.position, spell.castLocation.rotation);
-            PlayParticles(projectile);
+            List<GameObject> spawnedProjectiles = new List<GameObject>();
 
-            if (spell.movementType == ProjectileMovementType.PathThenTarget && spell.pathPrefab != null)
+            foreach (GameObject projPrefab in spell.projectilePrefabs)
             {
-                PathCreator pathInstance = Instantiate(spell.pathPrefab, spell.castLocation.position, spell.castLocation.rotation);
-                VertexPath path = pathInstance.path;
-                float distanceTravelled = 0f;
+                if (projPrefab == null) continue;
+                GameObject projectile = Instantiate(projPrefab, spell.castLocation.position, spell.castLocation.rotation);
+                PlayParticles(projectile);
+                spawnedProjectiles.Add(projectile);
+            }
 
-                while (projectile != null && distanceTravelled < path.length)
+            if (spawnedProjectiles.Count > 0)
+            {
+                float seed = Random.Range(0f, 100f);
+
+                if (spell.movementType == ProjectileMovementType.PathThenTarget && spell.pathPrefab != null)
                 {
-                    distanceTravelled += spell.pathSpeed * Time.deltaTime;
-                    projectile.transform.position = path.GetPointAtDistance(distanceTravelled, EndOfPathInstruction.Stop);
-                    projectile.transform.rotation = path.GetRotationAtDistance(distanceTravelled, EndOfPathInstruction.Stop);
+                    PathCreator pathInstance = Instantiate(spell.pathPrefab, spell.castLocation.position, spell.castLocation.rotation);
+                    VertexPath path = pathInstance.path;
+                    float distanceTravelled = 0f;
+
+                    while (spawnedProjectiles.Exists(p => p != null) && distanceTravelled < path.length)
+                    {
+                        distanceTravelled += spell.pathSpeed * Time.deltaTime;
+
+                        float currentDistance = spell.reversePath ? (path.length - distanceTravelled) : distanceTravelled;
+
+                        Vector3 pathPos = path.GetPointAtDistance(currentDistance, EndOfPathInstruction.Stop);
+                        Quaternion pathRot = path.GetRotationAtDistance(currentDistance, EndOfPathInstruction.Stop);
+
+                        Vector3 noiseOffset = CalculateNoiseOffset(spell, seed);
+                        Vector3 finalPos = pathPos + noiseOffset;
+
+                        // LÍMITE DE SUELO EN Y
+                        if (spell.clampMinimumY && finalPos.y < spell.minimumYValue)
+                        {
+                            finalPos.y = spell.minimumYValue;
+                        }
+
+                        foreach (GameObject projectile in spawnedProjectiles)
+                        {
+                            if (projectile != null)
+                            {
+                                projectile.transform.position = finalPos;
+                                projectile.transform.rotation = pathRot;
+                            }
+                        }
+                        yield return null;
+                    }
+
+                    if (pathInstance != null) Destroy(pathInstance.gameObject);
+                }
+
+                Vector3 logicalPosition = spawnedProjectiles[0] != null ? spawnedProjectiles[0].transform.position : spell.castLocation.position;
+
+                while (spawnedProjectiles.Exists(p => p != null) && Vector3.Distance(logicalPosition, targetImpactPos) > 0.3f)
+                {
+                    // Actualizar objetivo en caso de que se mueva mientras el proyectil vuela
+                    if (spell.impactLocation != null) targetImpactPos = spell.impactLocation.position;
+                    else if (spell.target != null) targetImpactPos = spell.target.position;
+
+                    logicalPosition = Vector3.MoveTowards(logicalPosition, targetImpactPos, spell.projectileSpeed * Time.deltaTime);
+
+                    Vector3 noiseOffset = CalculateNoiseOffset(spell, seed);
+                    Vector3 finalPos = logicalPosition + noiseOffset;
+
+                    // LÍMITE DE SUELO EN Y
+                    if (spell.clampMinimumY && finalPos.y < spell.minimumYValue)
+                    {
+                        finalPos.y = spell.minimumYValue;
+                    }
+
+                    foreach (GameObject projectile in spawnedProjectiles)
+                    {
+                        if (projectile != null)
+                        {
+                            projectile.transform.position = finalPos;
+                            projectile.transform.LookAt(targetImpactPos);
+                        }
+                    }
                     yield return null;
                 }
 
-                if (pathInstance != null) Destroy(pathInstance.gameObject);
+                foreach (GameObject projectile in spawnedProjectiles)
+                {
+                    if (projectile != null) Destroy(projectile); // Se borran los proyectiles al terminar el vuelo
+                }
             }
-
-            while (projectile != null && Vector3.Distance(projectile.transform.position, targetImpactPos) > 0.3f)
-            {
-                if (spell.impactLocation != null) targetImpactPos = spell.impactLocation.position;
-                else if (spell.target != null) targetImpactPos = spell.target.position;
-
-                projectile.transform.position = Vector3.MoveTowards(projectile.transform.position, targetImpactPos, spell.projectileSpeed * Time.deltaTime);
-                projectile.transform.LookAt(targetImpactPos);
-                yield return null;
-            }
-
-            if (projectile != null) Destroy(projectile);
         }
 
         TriggerCameraShake(spell.impactCameraShake);
 
-        if (spell.impactExplosionPrefab != null)
+        // FASE 3: IMPACTO
+        // Si no hay proyectil, targetImpactPos se calculó justo antes y la explosión ocurre ahí directamente
+        if (spell.impactExplosionPrefabs != null && spell.impactExplosionPrefabs.Count > 0)
         {
-            GameObject explosion = Instantiate(spell.impactExplosionPrefab, targetImpactPos, Quaternion.identity);
-            PlayParticles(explosion);
-            Destroy(explosion, spell.destroyImpactVfxAfter);
+            foreach (GameObject impactPrefab in spell.impactExplosionPrefabs)
+            {
+                if (impactPrefab == null) continue;
+                GameObject explosion = Instantiate(impactPrefab, targetImpactPos, Quaternion.identity);
+                PlayParticles(explosion);
+
+                // Se borran las explosiones después del tiempo indicado
+                Destroy(explosion, spell.destroyImpactVfxAfter);
+            }
         }
 
         if (spell.targetAnimator != null && !string.IsNullOrEmpty(spell.targetDeathAnimTrigger))
@@ -181,6 +259,20 @@ public class SpellManager : MonoBehaviour
 
         yield return new WaitForSeconds(spell.cooldownAfterImpact);
         _isCasting = false;
+    }
+
+    private Vector3 CalculateNoiseOffset(SpellConfig spell, float seed)
+    {
+        if (!spell.useNoise) return Vector3.zero;
+
+        float time = Time.time * spell.noiseFrequency;
+        Vector3 noiseOffset = Vector3.zero;
+
+        noiseOffset.x = (Mathf.PerlinNoise(seed, time) - 0.5f) * 2f * spell.noiseMagnitude;
+        noiseOffset.y = (Mathf.PerlinNoise(seed + 10f, time) - 0.5f) * 2f * spell.noiseMagnitude;
+        noiseOffset.z = (Mathf.PerlinNoise(seed + 20f, time) - 0.5f) * 2f * spell.noiseMagnitude;
+
+        return noiseOffset;
     }
 
     private void TriggerCameraShake(CameraShakeConfig config)
@@ -207,17 +299,17 @@ public class SpellManager : MonoBehaviour
     {
         vfxInstance.SetActive(true);
 
-        VisualEffect[] vfxGraphs = vfxInstance.GetComponentsInChildren<VisualEffect>();
+        VisualEffect[] vfxGraphs = vfxInstance.GetComponentsInChildren<VisualEffect>(true);
         foreach (VisualEffect vfx in vfxGraphs)
         {
-            vfx.Reinit();
+            vfx.gameObject.SetActive(true);
             vfx.SendEvent("OnPlay");
         }
 
-        ParticleSystem[] particles = vfxInstance.GetComponentsInChildren<ParticleSystem>();
+        ParticleSystem[] particles = vfxInstance.GetComponentsInChildren<ParticleSystem>(true);
         foreach (ParticleSystem ps in particles)
         {
-            ps.Clear();
+            ps.gameObject.SetActive(true);
             ps.Play();
         }
     }
