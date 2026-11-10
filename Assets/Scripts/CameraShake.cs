@@ -1,12 +1,43 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
+using System.Collections.Generic;
+
+public enum ShakeType
+{
+    LightImpact,
+    HeavyExplosion,
+    SubtleRumble,
+    Custom
+}
+
+[System.Serializable]
+public class ShakeProfile
+{
+    public string profileName = "New Shake Profile";
+    public ShakeType shakeType;
+
+    [Header("Values")]
+    public float duration = 0.4f;
+    public float positionMagnitude = 0.3f;
+    public float rotationMagnitude = 2.0f;
+    public float frequency = 25.0f;
+}
 
 public class CameraShake : MonoBehaviour
 {
+    public static CameraShake Instance { get; private set; }
+
     [Header("Referencia")]
     [Tooltip("Transform de la cámara que vibrará. Si está vacío usa Camera.main")]
     public Transform cameraTransform;
+
+    [Header("Perfiles Predefinidos (Presets)")]
+    public List<ShakeProfile> shakeProfiles = new List<ShakeProfile>()
+    {
+        new ShakeProfile { profileName = "Light Impact", shakeType = ShakeType.LightImpact, duration = 0.2f, positionMagnitude = 0.15f, rotationMagnitude = 1f, frequency = 30f },
+        new ShakeProfile { profileName = "Heavy Explosion", shakeType = ShakeType.HeavyExplosion, duration = 0.5f, positionMagnitude = 0.4f, rotationMagnitude = 3f, frequency = 20f },
+        new ShakeProfile { profileName = "Subtle Rumble", shakeType = ShakeType.SubtleRumble, duration = 0.8f, positionMagnitude = 0.08f, rotationMagnitude = 0.5f, frequency = 15f }
+    };
 
     [Header("Valores por defecto")]
     [Tooltip("Duración del shake en segundos")]
@@ -58,6 +89,16 @@ public class CameraShake : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+            return;
+        }
+
         if (cameraTransform == null)
         {
             Camera cam = Camera.main;
@@ -77,13 +118,26 @@ public class CameraShake : MonoBehaviour
             int numEnter = _ps.GetTriggerParticles(ParticleSystemTriggerEventType.Enter, _enterParticles);
             if (numEnter > 0)
             {
-                // Invoca la lista de funciones asignadas en el Inspector
                 onParticleTriggerEvent?.Invoke();
             }
         }
         else
         {
             onParticleTriggerEvent?.Invoke();
+        }
+    }
+
+    /// <summary>Activa un shake usando el enum Preset seleccionado.</summary>
+    public void TriggerPresetShake(ShakeType type)
+    {
+        ShakeProfile profile = shakeProfiles.Find(p => p.shakeType == type);
+        if (profile != null)
+        {
+            Shake(profile.duration, profile.positionMagnitude, profile.rotationMagnitude, profile.frequency);
+        }
+        else
+        {
+            Debug.LogWarning($"Shake profile for {type} not found in CameraShake.");
         }
     }
 
