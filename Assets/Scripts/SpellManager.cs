@@ -37,21 +37,21 @@ public struct CameraShakeConfig
 [System.Serializable]
 public class SpellConfig
 {
-    public string spellName = "Thunder Sequence";
+    public string spellName = "SpellName";
 
-    [Header("1 · REFERENCES AND CONTROLS")]
+    [Header("1 REFERENCES AND CONTROLS")]
     public Key triggerKey = Key.Digit1;
     public Transform caster;
     public Transform target;
     public Animator casterAnimator;
     public Animator targetAnimator;
 
-    [Header("2 · PREPARATION · VFX AND TIMING")]
+    [Header("2 PREPARATION VFX AND TIMING")]
     public List<GameObject> prepVfxPrefabs = new List<GameObject>();
     public List<float> prepVfxPrefabDelays = new List<float>();
     public float prepVfxDelay = 0.0f;
 
-    [Header("2 · PREPARATION · SHAKE")]
+    [Header("2 PREPARATION- SHAKE")]
     public bool prepShakeEnabled = false;
     public ShakeType prepShakeType = ShakeType.HeavyExplosion;
     public float prepShakeTimeOffset = 0f;
@@ -59,13 +59,13 @@ public class SpellConfig
     public float prepShakeIntensityMult = 1f;
     public float prepShakeFrequencyMult = 1f;
 
-    [Header("2 · PREPARATION · CUSTOM SHAKE (Custom type only)")]
+    [Header("2 PREPARATION - CUSTOM SHAKE (Custom type only)")]
     public float prepShakeCustomDuration = 0.4f;
     public float prepShakeCustomPosition = 0.3f;
     public float prepShakeCustomRotation = 2.0f;
     public float prepShakeCustomFrequency = 25.0f;
 
-    [Header("2 · PREPARATION · ADVANCED SHAKE")]
+    [Header("2 PREPARATION - ADVANCED SHAKE")]
     public bool prepShakeOverrideAdvanced = false;
     public AnimationCurve prepShakeFalloff = AnimationCurve.Linear(0f, 1f, 1f, 0f);
     public bool prepShakePosition = true;
@@ -74,13 +74,13 @@ public class SpellConfig
     public Vector3 prepShakeRotationAxes = new Vector3(0.5f, 0.5f, 1f);
     public bool prepShakeUnscaledTime = false;
 
-    [Header("3 · CAST · PROJECTILES AND TIMING")]
+    [Header("3 CAST PROJECTILES AND TIMING")]
     public List<GameObject> projectilePrefabs = new List<GameObject>();
     public List<float> projectilePrefabDelays = new List<float>();
     public Transform castLocation;
     [FormerlySerializedAs("projectileCastDelay")] public float castDelay = 0.8f;
 
-    [Header("3 · CAST · SHAKE")]
+    [Header("3 CAST - SHAKE")]
     public bool castShakeEnabled = false;
     public ShakeType castShakeType = ShakeType.HeavyExplosion;
     public float castShakeTimeOffset = 0f;
@@ -88,13 +88,13 @@ public class SpellConfig
     public float castShakeIntensityMult = 1f;
     public float castShakeFrequencyMult = 1f;
 
-    [Header("3 · CAST · CUSTOM SHAKE (Custom type only)")]
+    [Header("3 CAST - CUSTOM SHAKE (Custom type only)")]
     public float castShakeCustomDuration = 0.4f;
     public float castShakeCustomPosition = 0.3f;
     public float castShakeCustomRotation = 2.0f;
     public float castShakeCustomFrequency = 25.0f;
 
-    [Header("3 · CAST · ADVANCED SHAKE")]
+    [Header("3 CAST - ADVANCED SHAKE")]
     public bool castShakeOverrideAdvanced = false;
     public AnimationCurve castShakeFalloff = AnimationCurve.Linear(0f, 1f, 1f, 0f);
     public bool castShakePosition = true;
@@ -103,7 +103,7 @@ public class SpellConfig
     public Vector3 castShakeRotationAxes = new Vector3(0.5f, 0.5f, 1f);
     public bool castShakeUnscaledTime = false;
 
-    [Header("4 · FLIGHT · MOVEMENT")]
+    [Header("4 FLIGHT - MOVEMENT")]
     public bool useProjectile = true;
     public ProjectileMovementType movementType = ProjectileMovementType.PathThenTarget;
     public PathCreator pathPrefab;
@@ -111,23 +111,23 @@ public class SpellConfig
     public float pathSpeed = 10f;
     public float projectileSpeed = 15f;
 
-    [Header("5 · FLIGHT · TRAJECTORY NOISE")]
+    [Header("5 FLIGHT - TRAJECTORY NOISE")]
     public bool useNoise = false;
     public float noiseFrequency = 5.0f;
     public float noiseMagnitude = 0.5f;
 
-    [Header("6 · FLIGHT · FLOOR LIMIT")]
+    [Header("6 FLIGHT - FLOOR LIMIT")]
     public bool clampMinimumY = true;
     public float minimumYValue = 0f;
 
-    [Header("7 · IMPACT · VFX AND TIMING")]
+    [Header("7 IMPACT - VFX AND TIMING")]
     public List<GameObject> impactExplosionPrefabs = new List<GameObject>();
     public List<float> impactExplosionPrefabDelays = new List<float>();
     public Transform impactLocation;
     public float summonImpactDelay = 0.5f;
     public float destroyImpactVfxAfter = 4f;
 
-    [Header("7 · IMPACT · SHAKE")]
+    [Header("7 IMPACT - SHAKE")]
     public bool impactShakeEnabled = true;
     public ShakeType impactShakeType = ShakeType.HeavyExplosion;
     public float impactShakeTimeOffset = 0f;
@@ -135,13 +135,13 @@ public class SpellConfig
     public float impactShakeIntensityMult = 1f;
     public float impactShakeFrequencyMult = 1f;
 
-    [Header("7 · IMPACT · CUSTOM SHAKE (Custom type only)")]
+    [Header("7 IMPACT - CUSTOM SHAKE (Custom type only)")]
     public float impactShakeCustomDuration = 0.4f;
     public float impactShakeCustomPosition = 0.3f;
     public float impactShakeCustomRotation = 2.0f;
     public float impactShakeCustomFrequency = 25.0f;
 
-    [Header("7 · IMPACT · ADVANCED SHAKE")]
+    [Header("7 IMPACT - ADVANCED SHAKE")]
     public bool impactShakeOverrideAdvanced = false;
     public AnimationCurve impactShakeFalloff = AnimationCurve.Linear(0f, 1f, 1f, 0f);
     public bool impactShakePosition = true;
@@ -150,13 +150,13 @@ public class SpellConfig
     public Vector3 impactShakeRotationAxes = new Vector3(0.5f, 0.5f, 1f);
     public bool impactShakeUnscaledTime = false;
 
-    [Header("8 · ANIMATIONS · TRIGGERS")]
-    public string casterAnimTrigger = "CastSpell";
+    [Header("8 ANIMATIONS - TRIGGERS")]
+    public string casterAnimTrigger = "TriggerName";
     public float casterAnimDelay = 0f;
-    public string targetDeathAnimTrigger = "Die";
+    public string targetDeathAnimTrigger = "TriggerName";
     public float targetAnimDelay = 0f;
 
-    [Header("9 · COOLDOWN")]
+    [Header("9 COOLDOWN")]
     public float cooldownAfterImpact = 1.5f;
 
     public CameraShakeConfig GetPrepShake()
