@@ -51,6 +51,11 @@ public class SpellConfig
     public List<float> prepVfxPrefabDelays = new List<float>();
     public float prepVfxDelay = 0.0f;
 
+    [Header("2 PREPARATION - SFX")]
+    public AudioClip prepSfx;
+    [Range(0f, 1f)] public float prepSfxVolume = 1f;
+    public float prepSfxDelay = 0f;
+
     [Header("2 PREPARATION- SHAKE")]
     public bool prepShakeEnabled = false;
     public ShakeType prepShakeType = ShakeType.HeavyExplosion;
@@ -79,6 +84,11 @@ public class SpellConfig
     public List<float> projectilePrefabDelays = new List<float>();
     public Transform castLocation;
     [FormerlySerializedAs("projectileCastDelay")] public float castDelay = 0.8f;
+
+    [Header("3 CAST - SFX")]
+    public AudioClip castSfx;
+    [Range(0f, 1f)] public float castSfxVolume = 1f;
+    public float castSfxDelay = 0f;
 
     [Header("3 CAST - SHAKE")]
     public bool castShakeEnabled = false;
@@ -126,6 +136,11 @@ public class SpellConfig
     public Transform impactLocation;
     public float summonImpactDelay = 0.5f;
     public float destroyImpactVfxAfter = 4f;
+
+    [Header("7 IMPACT - SFX")]
+    public AudioClip impactSfx;
+    [Range(0f, 1f)] public float impactSfxVolume = 1f;
+    public float impactSfxDelay = 0f;
 
     [Header("7 IMPACT - SHAKE")]
     public bool impactShakeEnabled = true;
@@ -234,6 +249,10 @@ public class SpellConfig
 public class SpellManager : MonoBehaviour
 {
     public List<SpellConfig> spells = new List<SpellConfig>();
+
+    [Tooltip("AudioSource usado para los SFX de los hechizos. Si está vacío se crea uno automáticamente (2D).")]
+    public AudioSource sfxSource;
+
     private bool _isCasting = false;
 
     private readonly List<GameObject> _spawnedProjectiles = new List<GameObject>();
@@ -253,6 +272,16 @@ public class SpellManager : MonoBehaviour
     }
     private ShakeDefaults _shakeDefaults;
     private bool _shakeDefaultsCached = false;
+
+    private void Awake()
+    {
+        if (sfxSource == null && !TryGetComponent(out sfxSource))
+        {
+            sfxSource = gameObject.AddComponent<AudioSource>();
+            sfxSource.playOnAwake = false;
+            sfxSource.spatialBlend = 0f;
+        }
+    }
 
     void Update()
     {
@@ -306,6 +335,8 @@ public class SpellManager : MonoBehaviour
 
         if (spell.prepVfxDelay > 0) yield return new WaitForSeconds(spell.prepVfxDelay);
 
+        ScheduleSfx(spell.prepSfx, spell.prepSfxVolume, spell.prepSfxDelay);
+
         if (spell.prepVfxPrefabs != null)
         {
             for (int i = 0; i < spell.prepVfxPrefabs.Count; i++)
@@ -320,6 +351,8 @@ public class SpellManager : MonoBehaviour
         if (remainingWait > 0) yield return new WaitForSeconds(remainingWait);
 
         Vector3 targetImpactPos = GetImpactPosition(spell);
+
+        ScheduleSfx(spell.castSfx, spell.castSfxVolume, spell.castSfxDelay);
 
         if (spell.useProjectile)
         {
@@ -405,6 +438,7 @@ public class SpellManager : MonoBehaviour
         }
 
         if (spell.useProjectile && !impactShakeFired) ScheduleShake(impactShake, 0f);
+        ScheduleSfx(spell.impactSfx, spell.impactSfxVolume, spell.impactSfxDelay);
 
         if (spell.impactExplosionPrefabs != null && spell.impactExplosionPrefabs.Count > 0)
         {
@@ -583,6 +617,20 @@ public class SpellManager : MonoBehaviour
     {
         yield return new WaitForSeconds(delay);
         TriggerCameraShake(config);
+    }
+
+    private void ScheduleSfx(AudioClip clip, float volume, float delay)
+    {
+        if (clip == null || sfxSource == null) return;
+
+        if (delay <= 0f) sfxSource.PlayOneShot(clip, volume);
+        else StartCoroutine(PlaySfxAfterDelay(clip, volume, delay));
+    }
+
+    private IEnumerator PlaySfxAfterDelay(AudioClip clip, float volume, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        if (sfxSource != null) sfxSource.PlayOneShot(clip, volume);
     }
 
 #if UNITY_EDITOR
